@@ -65,9 +65,16 @@ bool Adafruit_MAX17048::begin(TwoWire *wire) {
 
   status_reg = new Adafruit_BusIO_Register(i2c_dev, MAX1704X_STATUS_REG);
 
+  // The MAX1704X reset command is expected to fail (device resets before ACK).
+  // On Arduino-ESP32 with the newer I2C driver stack, this can surface as a
+  // noisy ESP_ERR_INVALID_STATE log even though the device is fine afterwards.
+  // Skip the reset here on ESP32; callers can still invoke quickStart()/reset()
+  // explicitly if they need it.
+#if !defined(ESP32)
   if (!reset()) {
     return false;
   }
+#endif
 
   enableSleep(false);
   sleep(false);
